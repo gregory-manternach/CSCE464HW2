@@ -1,0 +1,293 @@
+\documentclass[11pt]{article}
+\usepackage{mytex}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{soul,color}
+\usepackage{url}
+\usepackage{hyperref}
+
+\begin{document}
+\newcommand{\answer}[1]{{\newline \hl{Answer:} #1}}
+%\newcommand{\answer}[1]{\mbox{~}}
+
+{\large  CSCE 464 Wireless and Mobile Systems  \hfill \\
+ \begin{center}
+   Homework 2 \\
+   (285 points; Submit through canvas.tamu.edu) \\ 
+   Name: \hl{Your Name}
+    \end{center}
+}
+
+You MUST use this latex template for writing your answers to questions that require written answers. You are free to use any Latex editor you wish. A free, friendly version is at overleaf.com. Upload the two latex files provided and you will be ready in a few minutes to edit them and produce a pdf.
+
+
+\section{Multipath TCP (MPTCP)}
+
+\subsection{Hands-on MPTCP in Ubuntu 22.04 LTS [120 points]}
+In this part of the assignment you will gain hands-on experience with MPTCP and tcpdump (command line packet analyzer, or a version of Wireshark for environments where Wireshark GUI is not possible).
+
+MPTCP is an integral part of 5G~\cite{understanding5G}. There have been ongoing efforts to upstream MPTCP into the Linux kernel~\cite{linuxkernel}. In this part of the assignment, we will enable MPTCP support in Ubuntu 22.04 LTS and monitor an MPTCP connection to understand its functionality. 
+
+\subsubsection{Become familiar with tcpdump}
+Check the man pages for tcpdump (\# man tcpdump). Here are a few examples on how to use it:
+
+\begin{verbatim}
+    $sudo tcpdump -i eth0 -v port 1234
+\end{verbatim}
+which monitors interface eth0 and port 1234 and prints output in verbose mode
+
+\begin{verbatim}
+    $sudo tcpdump -i eth0 udp
+\end{verbatim}
+which monitors interface eth0 and filters out other packets than udp
+
+\begin{verbatim}
+    $sudo tcpdump -i eth0 dst 10.10.1.20
+\end{verbatim}
+which monitors interface eth0 and filters out other packets than those with destination 10.10.1.20. Alternatively, you can use `src' in place of `dst'.
+
+\subsection{What To Do}
+
+\subsubsection{Enable MPTCP and set up network interfaces}
+In VirtualBox setup 2 Virtual machines to act as the server and the client. You can set up the second VM in the same way as the previous one (in HW1). Configure 2 network interfaces in the server VM and 1 interface in the client VM. Set all network interfaces in VirtualBox as Bridged Adapter. 
+
+Enable MPTCP in both VMs as follows:
+\begin{verbatim}
+    $sudo sysctl net.mptcp.enabled = 1
+\end{verbatim}
+
+\subsection{Setup signal and subflows on the server and client}
+Follow the given steps below in the server VM to setup a signal and subflow. Use the ifconfig command to identify the IP addresses of the machines in the Ethernet interface. \\
+
+Server side:
+\vspace{-10pt}
+\begin{enumerate}
+    \item Set the subflow limit to 1
+    \vspace{-10pt}
+    \begin{verbatim}
+        $sudo ip mptcp limits set subflow 1
+    \end{verbatim}
+    \vspace{-10pt}
+    \item Set the number of addresses accepted to 1
+    \vspace{-10pt}
+    \begin{verbatim}
+        $sudo ip mptcp limits set subflow 1 add_addr_accepted 1
+    \end{verbatim}
+    \vspace{-10pt}
+    \item Add one of the interface's IP address as a signal and the other one as a subflow
+    \vspace{-10pt}
+    \begin{verbatim}
+         $sudo ip mptcp endpoint add <one of the server interface's IP> 
+         dev <corresponding interface name> signal
+         $sudo ip mptcp endpoint add <server's other interface IP> 
+         dev <corresponding interface name> subflow
+    \end{verbatim}
+\end{enumerate}
+
+\vspace{-15pt}
+Client side:
+\vspace{-10pt}
+\begin{enumerate}
+    \item Repeat step 2 from the server side. 
+\end{enumerate}
+
+\subsubsection{Capture Traffic from a Sample Application}
+
+Study the provided code that creates a server and multiple clients communicating using MPTCP. Compile and execute the code.\\ 
+
+Server:
+\begin{verbatim}
+    ./server <port number> files/small.txt <number of times the message is to be sent>
+\end{verbatim}
+
+Client:
+\begin{verbatim}
+    ./client <Server's subflow interface IP> <port number>
+\end{verbatim}
+
+
+Before you start to capture traffic ensure that the signal and subflows are properly set. View and confirm this using the following command:
+\begin{verbatim}
+    $sudo ip mptcp endpoint show
+\end{verbatim}
+
+Capture the traffic using tcpdump and check for MPTCP. Try to also capture the traffic and observe subflows using 
+\begin{verbatim}
+    $sudo ip mptcp monitor
+\end{verbatim}
+
+Take screenshots of both. Attach them below in Figure~\ref{fig:problem1-3} and \ref{fig:problem1-4} [Please make sure your figure is legible. Increase the size of the figure, if needed.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\hspace{10mm}
+\caption{MPTCP for a sample application - tcpdump}
+\label{fig:problem1-3}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\hspace{10mm}
+\caption{MPTCP for a sample application - monitor}
+\label{fig:problem1-4}
+\end{figure}
+
+%=============================================================================
+%=============================================================================
+\section{SSL/TLS Client Server Application (45pts)}
+In this part of the assignment you will learn how to use certificates and secure communication between a client and a server using TLS/SSL.
+
+Start by studying, compiling and executing the attached sample client and server (in tls-ssl-client-server.tar). The make\_cert.sh script contains the command for creating a public-private key pair (cert.pem and key.pem).
+
+To compile and execute the client and the server, execute:
+
+\begin{verbatim}
+    $gcc -o client client.c -lssl -lcrypto
+    $gcc -o server server.c -lssl -lcrypto
+    $./server 1234 &
+    ... you will be prompted for the password to the pem file, which is: "password"
+    $./client localhost 1234
+\end{verbatim}
+
+\subsection{What To Do}
+Modify your submitted pincracktest server and client to use TLS/SSL for communication.
+
+\subsection{What to Submit}
+Submit the modified pincracktest client and server that use TLS/SSL.
+Submit a screenshot of the Wireshark capture for the communication between the client and the server with AND without TLS/SSL as shown in Figure~\ref{fig:problem2}.
+
+\begin{figure}[ht]
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\caption{Wireshark output without (left) and with (right) TLS/SSL}
+\label{fig:problem2}
+\end{figure}
+
+
+
+%=============================================================================
+%=============================================================================
+\section{A QUIC Library (msquic) and Sample Application (60pts)}
+In this part of the assignment you will experiment with an implementaiton of th QUIC protocol, as provided by Microsoft~\cite{msquic}. We will largely follow the build steps suggested and you will experiment with a client and server applications that use QUIC (libmsquic.so).
+
+\subsection{Build Instructions for msquic}
+These instructions are for a Linux Ubuntu platform. Microsoft gives instructions on how to build msquic on Windows and Mac. However, for this assignment you will be on your own if you work on Windows or Mac.
+
+First, you need to clone the git repository, by executing the following:
+
+\begin{verbatim}
+    $git clone https://github.com/microsoft/msquic.git
+    $cd msquic
+    $git submodule update --init --recursive
+\end{verbatim}
+
+In particular, the last command is important as some subprojects in msquic are external modules, and they need to be fetched recursively, separately.
+
+\vspace{5mm}
+
+Next, edit the file $\sim$/msquic/CMakeLists.txt and change:
+
+\textbf{option(QUIC\_BUILD\_TOOLS ``Builds the tools code'' OFF)}
+
+to:
+
+\textbf{option(QUIC\_BUILD\_TOOLS ``Builds the tools code'' ON)}
+
+\vspace{5mm}
+
+Now you are ready to build the library:
+
+\begin{verbatim}
+    $mkdir build && cd build
+    $cmake -G 'Unix Makefiles' ..
+    $cmake --build .
+\end{verbatim}
+
+If you encounter problems during the build, likely your system is missing some dependencies, e.g., cmake, or openssl, etc. To ensure you have all dependencies satisfied, check the ``Documentation''~\cite{msquic} and its ``Build docs'' section.
+
+\subsection{A quicsample Application showcasing the QUIC Protocol}
+The msquic implementation of the QUIC protocol provides several sample applications that showcase the use of QUIC. The one we will use in this assignment is the following:
+
+\begin{verbatim}
+    $~/msquic/src/tools/sample/sample.c
+\end{verbatim}
+which contains both client and server code. Study the source code, how the client and the server need to be executed (i.e., command line arguments). Study also the source code for instructions on how to create the certificates that the server will need, in order to start. Create those certificate as instructed in the source code.
+
+The executable for the sample application is built by cmake and it is located in:
+
+\begin{verbatim}
+    $~/msquic/build/bin/Release/quicsample
+\end{verbatim}
+
+Start the client and the server. As mentioned above, the server will need two certificates: a public key (:cert\_file) and a private key (:key\_file).
+
+\subsection{What to Submit}
+
+%Please answer the following question:
+%\begin{enumerate}
+%    \item (20 points) What are the arguments for the gcc to compile the sample.c into an executable? Right now, the cmake does the job for you, but it hides what header and library files it uses. This question asks you to investigate by hand dependencies (address them one by one, until the program compiles and, again, one by one, until the program executes). Once you have this figured out you will be able to write your own code that uses the QUIC library.
+%    \answer{\hl{Write your answer here: \$gcc ....
+%    }}
+%\end{enumerate}
+
+Attach two screenshots showing the output from the server and from the client once a connection is established (Figure~\ref{fig:problem4-1}). [Please make sure your figure is legible once the pdf is created. Increase figure size accordingly]
+
+\begin{figure}
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\caption{Client (left) and Server (right) output}
+\label{fig:problem4-1}
+\end{figure}
+
+Attach one screenshots showing the output Wireshark once the client communicated successfully with the server (Figure~\ref{fig:problem4-2}). [Please make sure your figure is legible once the pdf is created. Increase figure size accordingly]
+
+\begin{figure}
+\centering
+\includegraphics[width=.49\columnwidth]{dummy.png}
+\caption{Wireshark output}
+\label{fig:problem4-2}
+\end{figure}
+
+%=============================================================================
+%=============================================================================
+\section{MPBond (60pts)}
+
+Please answer the following questions.
+\begin{enumerate}
+    \item (2 points) What is the problem that MPBond tried to solve? \answer{\hl{Write your answer here}}
+    \item (2 points) What is/are the main key idea(s) for solving the problem? 
+    \answer{\hl{Write your answer here}}
+    \item (2 points) What applications can potentially benefit from the MPBond solution? 
+    \answer{\hl{Write your answer here}}
+    \item (2 points) Explain the ``simultaneous subflow completion'' problem that is present in MPTCP and MPBond tries to solve? Why does it occur in MPTCP? 
+    \answer{\hl{Write your answer here}}
+    \item (2 points) Explaing the Dual Mode in MPBond? 
+    \answer{\hl{Write your answer here}}
+    \item (20 points) Describe the kibbutz solution that MPBond compares against (short paragraph)
+    Answer:  \answer{\hl{Write your answer here}}
+    \item (20 points) Describe the COMBINE solution that MPBond compares against (short paragraph)
+    Answer:  \answer{\hl{Write your answer here}}
+    \item (10 points) Describe the condition that triggers a reinjection of a packet in MPBond and the rationale behind it. (short paragraph)
+    Answer:  \answer{\hl{Write your answer here}}
+\end{enumerate}
+
+\section{Submission Instructions}
+Please submit the PDF as obtained from the provided latex template. Name your submission as $\langle$your lastname$\rangle$.hw2.pdf and submit it on canvas.tamu.edu. Also, please submit all source code as a single zip or tar file.
+
+\begin{thebibliography}{9}
+\bibitem{understanding5G}
+Lan Ding and Ye Tian and Tong Liu and Zhongxiang Wei and Xinming Zhang, Understanding commercial 5G and its implications to (Multipath) TCP 
+
+\bibitem{linuxkernel}
+Linux kernel discussion on MPTCP (Sept 2021): \url{https://lore.kernel.org/mptcp/}
+
+\bibitem{msquic}
+Microsoft msquic, A General Purpose QUIC library: \url{https://github.com/microsoft/msquic}
+
+\end{thebibliography}
+
+\end{document}
+
